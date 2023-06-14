@@ -1,0 +1,118 @@
+#include <SoftwareSerial.h>
+#include <Servo.h>
+
+SoftwareSerial Serial_2(8,7);
+
+int buzzer = 5;
+
+Servo s1;//passagem de ar
+int pos1;
+int pinservo1=7;
+
+Servo s2;//torneira
+int pos2;
+int pinservo2=6;
+
+int sensorT = A0; 
+float temperatura;
+float valorSensorT;
+
+int sensorL = A1;
+int valorSensorLuz;
+
+int sensorU = A2;
+int valorSensorUmi;
+
+char entrada ='0';
+
+void setup() 
+{
+s1.attach(pinservo1);
+s2.attach(pinservo2);
+Serial.begin(9600);
+Serial_2.begin(9600);
+s1.write(pos1);
+s2.write(pos2);
+pinMode(13, OUTPUT);
+pinMode(buzzer, OUTPUT);
+}
+
+void loop()
+{
+
+
+valorSensorLuz = analogRead(sensorL);
+valorSensorUmi = analogRead(sensorU);
+valorSensorT=analogRead(sensorT);
+temperatura=(((valorSensorT-20)/338)*165)-40;
+
+Serial.println(" ");
+Serial.print("\n\nTemperatura: ");
+Serial.println(temperatura);
+delay(300);
+  
+
+Serial.print("Luz: ");
+Serial.println(valorSensorLuz);
+delay(300);
+  
+Serial.print("Umidade: ");
+Serial.println(valorSensorUmi);
+delay(300);
+
+if(valorSensorLuz==679)//quando for de dia o led azul será ativado
+{
+	digitalWrite(13,HIGH);  
+}
+
+else//quando for de noite o led azul será desligado
+{
+	digitalWrite(13,LOW); 
+}
+
+if(temperatura>=10 && temperatura<=20)//a passagem de ar ficará meia aberta para ventilar entre 10 e 20 graus
+{
+	s1.write(60);
+}
+
+//condições que farão o buzzer tocar caso a temperatura e umidade estejam fora do ideal
+if(valorSensorUmi>=600)
+{
+    tone(buzzer, 3000, 200);
+}
+
+if(temperatura>20)
+{
+	tone(buzzer, 500, 300);
+}
+
+if(temperatura<10)
+{
+	tone(buzzer, 500, 200);
+}
+
+if(Serial_2.available()>0)//comunicar com o bluetooth
+{
+	entrada=Serial_2.read();
+
+	if(entrada=='a')//diminuir a temperatura da estufa
+	{
+		s1.write(120);//abrir a passagem de ar totalmente
+	}
+	if(entrada=='b')//aumentar a temperatura da estufa
+	{
+		s1.write(0);//fechar a passagem de ar totalmente
+	}
+  
+	if(entrada=='c')//ligar torneira
+	{
+	s2.write(120);
+	}
+	if(entrada=='d')//desligar torneira
+	{
+	s2.write(0);
+	}
+
+} 
+  
+}
